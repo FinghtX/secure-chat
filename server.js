@@ -27,8 +27,8 @@ io.on('connection', (socket) => {
     const { pseudo, content } = data;
 
     // Vérifie si le pseudo est autorisé
-    if (pseudo !== 'Kramel' && pseudo !== 'Shokola') {
-      socket.emit('erreur', '⛔️ Seuls Kramel et Shokola peuvent envoyer des messages.');
+    if (pseudo !== 'K_ramel' && pseudo !== 'Shokola') {
+      socket.emit('erreur', '⛔️ Seuls K et S peuvent envoyer des messages.');
       return;
     }
 
