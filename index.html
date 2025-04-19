@@ -19,22 +19,28 @@
     }
 
     #messages {
-      max-width: 500px;
+      max-width: 600px;
       margin: 20px auto;
       background: rgba(255,255,255,0.1);
       padding: 15px;
       border-radius: 15px;
       height: 300px;
       overflow-y: auto;
-      display: none;
+      display: block;
     }
 
     .bubble {
       background: rgba(255,255,255,0.2);
-      margin: 8px;
+      margin: 10px;
       padding: 10px;
       border-radius: 10px;
       text-align: left;
+    }
+
+    .timestamp {
+      font-size: 0.7rem;
+      color: #d1d5db;
+      margin-top: 4px;
     }
 
     input, button {
@@ -45,13 +51,13 @@
       font-size: 1rem;
     }
 
+    #loginArea {
+      margin-top: 100px;
+    }
+
     #formArea {
       margin-top: 10px;
       display: none;
-    }
-
-    #loginArea {
-      margin-top: 100px;
     }
 
     input[type="text"] {
@@ -63,55 +69,60 @@
   <h1>💌 ShoKa discussions</h1>
 
   <div id="loginArea">
-    <input id="pseudoInput" placeholder="Entre ton pseudo (K_ramel ou Shokola)">
-    <button onclick="login()">Entrer</button>
+    <input type="text" id="pseudo" placeholder="Entre ton pseudo..." />
+    <button onclick="login()">Se connecter</button>
+    <p id="loginError" style="color: yellow;"></p>
   </div>
 
   <div id="messages"></div>
 
   <div id="formArea">
-    <input id="messageInput" placeholder="Écris ton message ici...">
+    <input type="text" id="message" placeholder="Écris ton message ici..." />
     <button onclick="sendMessage()">Envoyer</button>
   </div>
 
   <script>
     const socket = io();
-    let pseudo = "";
+    let userPseudo = "";
 
     function login() {
-      const input = document.getElementById('pseudoInput');
-      const value = input.value.trim();
-      if (value === 'K_ramel' || value === 'Shokola') {
-        pseudo = value;
-        document.getElementById('loginArea').style.display = 'none';
-        document.getElementById('formArea').style.display = 'block';
-        document.getElementById('messages').style.display = 'block';
-      } else {
-        alert('Pseudo non autorisé. Utilise "K" ou "S".');
+      const pseudo = document.getElementById('pseudo').value.trim();
+      if (pseudo !== "Kramel" && pseudo !== "Shokola") {
+        document.getElementById('loginError').innerText = "⛔️ Seuls Kramel et Shokola sont autorisés.";
+        return;
       }
+
+      userPseudo = pseudo;
+      document.getElementById('loginArea').style.display = 'none';
+      document.getElementById('formArea').style.display = 'block';
     }
 
     function sendMessage() {
-      const input = document.getElementById('messageInput');
-      const content = input.value.trim();
-      if (content !== '') {
-        const data = {
-          pseudo: pseudo,
-          content: content,
-          timestamp: new Date().toLocaleString()
-        };
-        socket.emit('message', data);
-        input.value = '';
-      }
+      const msg = document.getElementById('message').value;
+      if (!msg) return;
+      socket.emit('message', { pseudo: userPseudo, content: msg });
+      document.getElementById('message').value = "";
     }
 
     socket.on('message', (data) => {
-      const msgContainer = document.getElementById('messages');
       const div = document.createElement('div');
       div.classList.add('bubble');
-      div.innerText = `[${data.timestamp}] ${data.pseudo} : ${data.content}`;
-      msgContainer.appendChild(div);
-      msgContainer.scrollTop = msgContainer.scrollHeight;
+      div.innerHTML = `<strong>${data.pseudo} :</strong> ${data.content}<br><span class="timestamp">${data.timestamp}</span>`;
+      document.getElementById('messages').appendChild(div);
+      document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+    });
+
+    socket.on('historique', (data) => {
+      data.forEach(msg => {
+        const div = document.createElement('div');
+        div.classList.add('bubble');
+        div.innerHTML = `<strong>${msg.pseudo} :</strong> ${msg.content}<br><span class="timestamp">${msg.timestamp}</span>`;
+        document.getElementById('messages').appendChild(div);
+      });
+    });
+
+    socket.on('erreur', (msg) => {
+      alert(msg);
     });
   </script>
 </body>
