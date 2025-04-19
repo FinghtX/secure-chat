@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>💌 Chat Chiffré avec César</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #f9a8d4, #60a5fa);
+      font-family: Arial, sans-serif;
+      color: white;
+      text-align: center;
+      padding: 30px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+    }
+
+    #messages {
+      max-width: 500px;
+      margin: 20px auto;
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 15px;
+      height: 300px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .bubble {
+      background: rgba(255,255,255,0.2);
+      margin: 8px;
+      padding: 10px;
+      border-radius: 10px;
+      text-align: left;
+    }
+
+    input, button {
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      margin: 5px;
+      font-size: 1rem;
+    }
+
+    #formArea {
+      margin-top: 10px;
+      display: none;
+    }
+
+    #loginArea {
+      margin-top: 100px;
+    }
+
+    input[type="text"] {
+      width: 250px;
+    }
+  </style>
+</head>
+<body>
+  <h1>💌 Chat Chiffré avec César</h1>
+
+  <!-- Zone de connexion -->
+  <div id="loginArea">
+    <input id="loginInput" type="text" placeholder="Choisis ton pseudo...">
+    <button onclick="enterChat()">Entrer dans le chat</button>
+  </div>
+
+  <!-- Zone de messages -->
+  <div id="messages"></div>
+
+  <!-- Zone d'envoi -->
+  <div id="formArea">
+    <input id="messageInput" type="text" placeholder="Écris ton message ici...">
+    <button onclick="sendMessage()">Envoyer</button>
+  </div>
+
+  <script>
+    const socket = io();
+    const messagesDiv = document.getElementById("messages");
+    const messageInput = document.getElementById("messageInput");
+    const loginInput = document.getElementById("loginInput");
+    const loginArea = document.getElementById("loginArea");
+    const formArea = document.getElementById("formArea");
+
+    let pseudo = "";
+
+    function caesarEncode(text, shift = 7) {
+      return text.replace(/[a-z]/gi, c =>
+        String.fromCharCode((c.toLowerCase().charCodeAt(0) - 97 + shift) % 26 + 97)
+      );
+    }
+
+    function caesarDecode(text, shift = 7) {
+      return caesarEncode(text, 26 - shift);
+    }
+
+    function enterChat() {
+      const entered = loginInput.value.trim();
+      if (entered !== "") {
+        pseudo = entered;
+        localStorage.setItem("pseudo", pseudo);
+
+        loginArea.style.display = "none";
+        formArea.style.display = "block";
+        messagesDiv.style.display = "block";
+      }
+    }
+
+    function sendMessage() {
+      const message = messageInput.value.trim();
+      if (message !== "") {
+        const coded = caesarEncode(message);
+        socket.emit("message", { pseudo: pseudo, content: coded });
+        messageInput.value = "";
+      }
+    }
+
+    socket.on("message", (data) => {
+      const decoded = caesarDecode(data.content);
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.innerText = `💬 [${data.pseudo}] : ${decoded}`;
+      messagesDiv.appendChild(bubble);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+
+    // Auto-remplissage si pseudo déjà stocké
+    window.onload = () => {
+      const saved = localStorage.getItem("pseudo");
+      if (saved) {
+        pseudo = saved;
+        loginArea.style.display = "none";
+        formArea.style.display = "block";
+        messagesDiv.style.display = "block";
+      }
+    };
+  </script>
+</body>
+</html>
+
